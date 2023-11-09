@@ -1,0 +1,192 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "factoryName": {
+            "type": "string",
+            "metadata": "Data Factory name",
+            "defaultValue": "adf-copy-files-from-aws-s3"
+        },
+        "devvideoblobstorage_connectionString": {
+            "type": "secureString",
+            "metadata": "Secure string for 'connectionString' of 'devvideoblobstorage'"
+        },
+        "AmazonS3BucketTwo_secretAccessKey": {
+            "type": "secureString",
+            "metadata": "Secure string for 'secretAccessKey' of 'AmazonS3BucketTwo'"
+        },
+        "AmazonS3BucketTwo_properties_typeProperties_accessKeyId": {
+            "type": "string",
+            "defaultValue": ""
+        }
+    },
+    "variables": {
+        "factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+    },
+    "resources": [
+        {
+            "name": "[concat(parameters('factoryName'), '/AWSBinaryFile')]",
+            "type": "Microsoft.DataFactory/factories/datasets",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "linkedServiceName": {
+                    "referenceName": "AmazonS3BucketTwo",
+                    "type": "LinkedServiceReference"
+                },
+                "annotations": [],
+                "type": "Binary",
+                "typeProperties": {
+                    "location": {
+                        "type": "AmazonS3Location",
+                        "bucketName": "aws-s3-video-youtube"
+                    }
+                }
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/linkedServices/AmazonS3BucketTwo')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/AzureBSBinaryFile')]",
+            "type": "Microsoft.DataFactory/factories/datasets",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "linkedServiceName": {
+                    "referenceName": "devvideoblobstorage",
+                    "type": "LinkedServiceReference"
+                },
+                "annotations": [],
+                "type": "Binary",
+                "typeProperties": {
+                    "location": {
+                        "type": "AzureBlobStorageLocation",
+                        "container": "aws-s3-copy-file"
+                    }
+                }
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/linkedServices/devvideoblobstorage')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/wait-pipeline')]",
+            "type": "Microsoft.DataFactory/factories/pipelines",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "activities": [
+                    {
+                        "name": "Wait1",
+                        "type": "Wait",
+                        "dependsOn": [],
+                        "userProperties": [],
+                        "typeProperties": {
+                            "waitTimeInSeconds": 1
+                        }
+                    }
+                ],
+                "policy": {
+                    "elapsedTimeMetric": {}
+                },
+                "annotations": [],
+                "lastPublishTime": "2023-10-17T06:23:57Z"
+            },
+            "dependsOn": []
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/aws-copy-data')]",
+            "type": "Microsoft.DataFactory/factories/pipelines",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "activities": [
+                    {
+                        "name": "Copy Data Activity From S3 Bucket",
+                        "type": "Copy",
+                        "dependsOn": [],
+                        "policy": {
+                            "timeout": "0.12:00:00",
+                            "retry": 0,
+                            "retryIntervalInSeconds": 30,
+                            "secureOutput": false,
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "source": {
+                                "type": "BinarySource",
+                                "storeSettings": {
+                                    "type": "AmazonS3ReadSettings",
+                                    "recursive": true
+                                },
+                                "formatSettings": {
+                                    "type": "BinaryReadSettings"
+                                }
+                            },
+                            "sink": {
+                                "type": "BinarySink",
+                                "storeSettings": {
+                                    "type": "AzureBlobStorageWriteSettings"
+                                }
+                            },
+                            "enableStaging": false
+                        },
+                        "inputs": [
+                            {
+                                "referenceName": "AWSBinaryFile",
+                                "type": "DatasetReference",
+                                "parameters": {}
+                            }
+                        ],
+                        "outputs": [
+                            {
+                                "referenceName": "AzureBSBinaryFile",
+                                "type": "DatasetReference",
+                                "parameters": {}
+                            }
+                        ]
+                    }
+                ],
+                "policy": {
+                    "elapsedTimeMetric": {}
+                },
+                "annotations": [],
+                "lastPublishTime": "2023-10-17T07:32:27Z"
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/datasets/AWSBinaryFile')]",
+                "[concat(variables('factoryId'), '/datasets/AzureBSBinaryFile')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/devvideoblobstorage')]",
+            "type": "Microsoft.DataFactory/factories/linkedServices",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "annotations": [],
+                "type": "AzureBlobStorage",
+                "typeProperties": {
+                    "connectionString": "[parameters('devvideoblobstorage_connectionString')]"
+                }
+            },
+            "dependsOn": []
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/AmazonS3BucketTwo')]",
+            "type": "Microsoft.DataFactory/factories/linkedServices",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "annotations": [],
+                "type": "AmazonS3",
+                "typeProperties": {
+                    "serviceUrl": "https://s3.amazonaws.com",
+                    "accessKeyId": "[parameters('AmazonS3BucketTwo_properties_typeProperties_accessKeyId')]",
+                    "secretAccessKey": {
+                        "type": "SecureString",
+                        "value": "[parameters('AmazonS3BucketTwo_secretAccessKey')]"
+                    },
+                    "authenticationType": "AccessKey"
+                }
+            },
+            "dependsOn": []
+        }
+    ]
+}

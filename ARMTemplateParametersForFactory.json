@@ -1,0 +1,18 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "factoryName": {
+            "value": "adf-copy-files-from-aws-s3"
+        },
+        "devvideoblobstorage_connectionString": {
+            "value": ""
+        },
+        "AmazonS3BucketTwo_secretAccessKey": {
+            "value": ""
+        },
+        "AmazonS3BucketTwo_properties_typeProperties_accessKeyId": {
+            "value": ""
+        }
+    }
+}
